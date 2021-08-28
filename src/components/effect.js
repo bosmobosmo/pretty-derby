@@ -3,10 +3,11 @@ import React from 'react';
 import { Table, Popover, Slider, Row ,Col} from "antd";
 
 import db from '../db.js'
+import dbL from '../dbL.js'
 import t from './t.js'
 
 
-const ua = db.get('ua').value();
+const ua = dbL.get('ua').value();
 // "limit_lv5": -1,
 // "limit_lv10": 5,
 // "limit_lv15": -1,
@@ -285,7 +286,7 @@ class TestEffectTable extends React.Component{
           />
         </div>
         <Row>
-          {this.props.effects.map(
+          {this.props.effects?.map(
             (item,index)=>{
               const data = [item.init,item.limit_lv5,item.limit_lv10,item.limit_lv15,item.limit_lv20,item.limit_lv25,item.limit_lv30,item.limit_lv35,item.limit_lv40,item.limit_lv45,item.limit_lv50].filter((item)=>(item));
               return (

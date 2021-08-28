@@ -1,8 +1,11 @@
 import React,{useState} from 'react';
 import shortid from 'shortid'
 import db from '../db.js'
+import dbL from '../dbL.js'
 import t from '../components/t.js'
-import { Divider,Row,Col,Modal,Button,Drawer,Table, Popover,Popconfirm,Tooltip} from 'antd';
+import axios from "axios";
+
+import { Divider,Row,Col,Modal,Button,Drawer,message, Popover,Popconfirm,Tooltip} from 'antd';
 import {EditOutlined} from '@ant-design/icons'
 
 import ScrollBars from 'react-custom-scrollbars'
@@ -11,12 +14,14 @@ import {EventList} from '../components/event.js'
 import {SkillList} from '../components/skill-detail.js'
 import {BuffButton} from '../components/buff.js'
 import {RaceSchedule,RaceTimeline,RaceCheckbox} from '../components/race.js'
+import {MyDecks,RecommendDecks} from '../components/deck.js'
 
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css'
 import Race from './race.js'
 import Player from './player.js'
 import Support from './support.js'
+import Checkbox from 'antd/lib/checkbox/Checkbox';
 
 
 const cdnServer = 'https://cdn.jsdelivr.net/gh/wrrwrr111/pretty-derby@master/public/'
@@ -30,7 +35,7 @@ const Nurturing = () =>{
   const [supportIndex, setSupportIndex] = useState(1);
 
 
-  const selected = db.get('selected').value()
+  const selected = dbL.get('selected').value()
   const [supports, setSupports] = useState(selected.supports);
   const [player, setPlayer] = useState(selected.player);
 
@@ -41,8 +46,6 @@ const Nurturing = () =>{
     ground:[]})
   const [filterRace,setFilterRace] = useState(selected.filterRace||{})
 
-  const [decks,setDecks] = useState(db.get('myDecks').value())
-
   const showPlayer = () => {
     setIsPlayerVisible(true);
   };
@@ -52,10 +55,9 @@ const Nurturing = () =>{
   const handleSelectPlayer = (data)=>{
     setIsPlayerVisible(false);
     setPlayer(data)
-
-    // save
+    // save player
     selected.player = data
-    db.get('selected').assign(selected).write()
+    dbL.get('selected').assign(selected).write()
   }
 
   const showSupport = (index) => {
@@ -80,38 +82,9 @@ const Nurturing = () =>{
 
     // save
     selected.supports[supportIndex] = data
-    db.get('selected').assign(selected).write()
+    dbL.get('selected').assign(selected).write()
   }
 
-
-  // 卡组相关操作
-  const saveDeck = (deck)=>{
-    let tmpDeck = {
-      imgUrls:[],
-      supportsId:[],
-    }
-    if(player.id){
-      tmpDeck.playerId = player.id
-      tmpDeck.imgUrls.push(player.imgUrl)
-    }
-    [0,1,2,3,4,5].forEach(index=>{
-      if(supports[index]&&supports[index].id){
-        tmpDeck.imgUrls.push(supports[index].imgUrl)
-        tmpDeck.supportsId.push(supports[index].id)
-      }else{
-        tmpDeck.supportsId.push(null)
-      }
-    })
-    if(deck){
-      //update
-      db.get('myDecks').find({id:deck.id}).assign(tmpDeck).write()
-    }else{
-      //
-      tmpDeck.id = shortid.generate()
-      db.get('myDecks').push(tmpDeck).write()
-    }
-    setDecks([...db.get('myDecks').value()])
-  }
   const loadDeck = (deck)=>{
     selected.supports={0:{},1:{},2:{},3:{},4:{},5:{}}
     selected.player={}
@@ -125,12 +98,12 @@ const Nurturing = () =>{
       }
     })
     setSupports({...selected.supports})
-    db.get('selected').assign(selected).write()
+    dbL.get('selected').assign(selected).write()
   }
-  const deleteDeck = (deck)=>{
-    db.get('myDecks').remove({id:deck.id}).write()
-    setDecks([...db.get('myDecks').value()])
-  }
+
+
+
+
 
   // race checkbox发生变化
   const onChangeRace = (filterCondition)=>{
@@ -154,7 +127,7 @@ const Nurturing = () =>{
     setFilterRace(tmpFilterRace)
     selected.raceFilterCondition = filterCondition
     selected.filterRace = tmpFilterRace
-    db.get('selected').assign({...selected}).write()
+    dbL.get('selected').assign({...selected}).write()
   }
 
   const useViewport = () => {
@@ -184,8 +157,9 @@ const Nurturing = () =>{
     {i: 'a', x: 0, y: 0, w: 2, h: 2},
     {i: 'b', x: 2, y: 0, w: 7, h: 2},
     {i: 'c', x: 0, y: 2, w: 9, h: 7},
-    {i: 'd', x: 0, y: 10, w: 4, h: 7},
+    {i: 'd', x: 0, y: 10, w: 4, h: 4},
     {i: 'e', x: 4, y: 10, w: 5, h: 7},
+    {i: 'f', x: 0, y: 14, w: 4, h: 3},
     // {i: 'w', x: 5, y: 10, w: 6, h: 7},
     {i: 's0', x: 17, y: 0, w: 5, h: 8},
     {i: 's1', x: 22, y: 0, w: 5, h: 8},
@@ -198,8 +172,9 @@ const Nurturing = () =>{
     {i: 'a', x: 0, y: 0, w: 2, h: 2},
     {i: 'b', x: 2, y: 0, w: 9, h: 2},
     {i: 'c', x: 0, y: 2, w: 11, h: 7},
-    {i: 'd', x: 0, y: 10, w: 5, h: 7},
+    {i: 'd', x: 0, y: 10, w: 5, h: 4},
     {i: 'e', x: 5, y: 10, w: 6, h: 7},
+    {i: 'f', x: 0, y: 14, w: 5, h: 3},
     // {i: 'w', x: 5, y: 10, w: 6, h: 7},
     {i: 's0', x: 11 , y: 0, w: 7, h: 8},
     {i: 's1', x: 18, y: 0, w: 7, h: 8},
@@ -208,11 +183,11 @@ const Nurturing = () =>{
     {i: 's4', x: 18, y: 9, w: 7, h: 8},
     {i: 's5', x: 25, y: 9, w: 7, h: 8},
   ]
-  const originalLayout = db.get('layout').value()||layoutWithoutBlank
+  const originalLayout = dbL.get('layout').value()||layoutWithoutBlank
   const [layout,setLayout]=useState(originalLayout)
   const onLayoutChange=(layout)=> {
     /*eslint no-console: 0*/
-    db.set('layout',layout).write()
+    dbL.set('layout',layout).write()
     setLayout(layout)
     // onLayoutChange(layout); // updates status display
   }
@@ -250,30 +225,10 @@ const Nurturing = () =>{
         <Popover content={<RaceCheckbox onChange={onChangeRace} raceFilterCondition={raceFilterCondition}></RaceCheckbox>}>
           <Button>{t('比赛')}</Button>
         </Popover>
-        <Popover width={'100%'} content={
-          <>
-                <Button onClick={()=>saveDeck()}>{t('保存为新卡组')}</Button>
-                {decks.map(deck=>
-                  <Row key={deck.id}>
-                    {deck.imgUrls.map(imgUrl=>
-                      <Col span={3} key={imgUrl}>
-                        <img src={cdnServer+imgUrl} alt={imgUrl} width={'100'}></img>
-                      </Col>
-                    )}
-                    <Col span={3}>
-                      <Button type="primary" onClick={()=>loadDeck(deck)}>{t('读取卡组')}</Button>
-                      <Popconfirm title={t("确认覆盖？")} onConfirm={()=>saveDeck(deck)}>
-                        <Button danger type="dashed">{t('覆盖卡组')}</Button>
-                      </Popconfirm>
-                      <Popconfirm title={t("确认删除？")} onConfirm={()=>deleteDeck(deck)}>
-                        <Button danger type="dashed">{t('删除卡组')}</Button>
-                      </Popconfirm>
-                    </Col>
-                  </Row>
-                )}
-              </>
-            }><Button>{t('我的卡组')}</Button>
-        </Popover>
+        <MyDecks player={player} supports={supports} loadDeck={loadDeck}></MyDecks>
+        <RecommendDecks player={player} loadDeck={loadDeck}></RecommendDecks>
+
+
         <Button onClick={()=>setLayout(layoutWithBlank)}>{t('初始化布局(有留白)')}</Button>
         <Button onClick={()=>setLayout(layoutWithoutBlank)}>{t('初始化布局(无留白)')}</Button>
       </div>
@@ -296,7 +251,12 @@ const Nurturing = () =>{
           <RaceTimeline raceList={player.raceList||[]} filterRace={filterRace}></RaceTimeline>
         </ScrollBars>
       </div>
-
+      <div key='f' style={{...panelStyle}}>
+        <div className='panel-heading' style={{...headStyle}}>{t('隐藏事件')}</div>
+        <ScrollBars autoHide={true} style={{...pBodyStyle}}>
+          <EventList eventList={player.hideEvent||[]} pid={player.id} type='all'></EventList>
+        </ScrollBars>
+      </div>
         {[0,1,2,3,4,5].map(index=>{
           let support = supports[index];
           if(support.id){
